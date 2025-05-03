@@ -113,60 +113,69 @@ const Products = () => {
                           .filter((product) => product.subcategory === subcategory)
                           .map((product) => (
                             <div key={product.id} className="product-card">
-                              <div className="p-6">
-                                <h4 className="text-lg font-semibold text-steelblue-900 mb-2">{product.name}</h4>
-                                <p className="text-sm text-steelgray-600 mb-4">{product.description}</p>
-                                
-                                <div className="flex justify-between items-center mb-3">
-                                  <div className="text-steelgray-800">
-                                    <span className="font-semibold">Price:</span> ₹{product.price.toFixed(2)}
-                                  </div>
-                                  <div className={`px-2 py-1 rounded text-sm ${
-                                    product.stock > 10 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : product.stock > 0 
-                                        ? 'bg-yellow-100 text-yellow-800' 
-                                        : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {product.stock > 0 ? `In Stock: ${product.stock}` : 'Out of Stock'}
-                                  </div>
+                              <div className="flex flex-col h-full">
+                                <div className="h-48 bg-white rounded-t-lg flex items-center justify-center overflow-hidden border-b">
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.name}
+                                    className="object-contain max-h-full max-w-full p-4"
+                                  />
                                 </div>
-                                
-                                {user && (
-                                  <div className="mt-4">
-                                    <div className="flex items-center space-x-2">
-                                      <div className="flex-1">
-                                        <label htmlFor={`quantity-${product.id}`} className="sr-only">
-                                          Quantity
-                                        </label>
-                                        <input
-                                          id={`quantity-${product.id}`}
-                                          type="number"
-                                          min="1"
-                                          value={quantities[product.id] || 1}
-                                          onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value))}
-                                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-steelblue-500"
-                                          disabled={product.stock === 0}
-                                        />
-                                      </div>
-                                      <Button
-                                        onClick={() => handleAddToCart(product)}
-                                        disabled={product.stock === 0}
-                                        className="flex items-center space-x-1"
-                                      >
-                                        <ShoppingCart className="h-4 w-4 mr-1" />
-                                        <span>Add to Cart</span>
-                                      </Button>
+                                <div className="p-6 flex-grow">
+                                  <h4 className="text-lg font-semibold text-steelblue-900 mb-2">{product.name}</h4>
+                                  <p className="text-sm text-steelgray-600 mb-4">{product.description}</p>
+                                  
+                                  <div className="flex justify-between items-center mb-3">
+                                    <div className="text-steelgray-800">
+                                      <span className="font-semibold">Price:</span> ₹{product.price.toFixed(2)}
+                                    </div>
+                                    <div className={`px-2 py-1 rounded text-sm ${
+                                      product.stock > 10 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : product.stock > 0 
+                                          ? 'bg-yellow-100 text-yellow-800' 
+                                          : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {product.stock > 0 ? `In Stock: ${product.stock}` : 'Out of Stock'}
                                     </div>
                                   </div>
-                                )}
-                                
-                                {!user && product.stock > 0 && (
-                                  <div className="mt-4 flex items-center text-steelblue-600">
-                                    <AlertCircle className="h-4 w-4 mr-1" />
-                                    <span className="text-sm">Login to place an order</span>
-                                  </div>
-                                )}
+                                  
+                                  {user && (
+                                    <div className="mt-4">
+                                      <div className="flex items-center space-x-2">
+                                        <div className="flex-1">
+                                          <label htmlFor={`quantity-${product.id}`} className="sr-only">
+                                            Quantity
+                                          </label>
+                                          <input
+                                            id={`quantity-${product.id}`}
+                                            type="number"
+                                            min="1"
+                                            value={quantities[product.id] || 1}
+                                            onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value))}
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-steelblue-500"
+                                            disabled={product.stock === 0}
+                                          />
+                                        </div>
+                                        <Button
+                                          onClick={() => handleAddToCart(product)}
+                                          disabled={product.stock === 0}
+                                          className="flex items-center space-x-1"
+                                        >
+                                          <ShoppingCart className="h-4 w-4 mr-1" />
+                                          <span>Add to Cart</span>
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {!user && product.stock > 0 && (
+                                    <div className="mt-4 flex items-center text-steelblue-600">
+                                      <AlertCircle className="h-4 w-4 mr-1" />
+                                      <span className="text-sm">Login to place an order</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}

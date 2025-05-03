@@ -5,12 +5,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { 
   Users, 
-  Package2, 
+  Package, 
   Clock, 
   CheckCircle2, 
   XCircle,
   Truck,
-  SearchIcon
+  SearchIcon,
+  Edit,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +39,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Order } from '@/context/ProductContext';
 import { toast } from 'sonner';
@@ -44,11 +47,13 @@ import { formatDistanceToNow } from 'date-fns';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
-  const { orders, updateOrderStatus } = useProducts();
+  const { orders, updateOrderStatus, updateOrderPrice } = useProducts();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [editedPrice, setEditedPrice] = useState<number | null>(null);
   
   // Redirect if not logged in or not admin
   if (!user) {
@@ -93,6 +98,39 @@ const AdminDashboard = () => {
   const handleViewOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setShowOrderDetails(true);
+    setEditedPrice(null);
+    setIsEditingPrice(false);
+  };
+
+  const startPriceEdit = () => {
+    if (selectedOrder) {
+      setEditedPrice(selectedOrder.total);
+      setIsEditingPrice(true);
+    }
+  };
+
+  const savePriceEdit = () => {
+    if (selectedOrder && editedPrice !== null) {
+      updateOrderPrice(selectedOrder.id, editedPrice);
+      setIsEditingPrice(false);
+      setSelectedOrder({
+        ...selectedOrder,
+        originalTotal: selectedOrder.originalTotal || selectedOrder.total,
+        total: editedPrice
+      });
+      toast.success('Order price updated successfully');
+    }
+  };
+
+  const cancelPriceEdit = () => {
+    setIsEditingPrice(false);
+    setEditedPrice(null);
+  };
+
+  const calculateDiscountPercentage = (order: Order) => {
+    if (!order.originalTotal) return 0;
+    const discount = order.originalTotal - order.total;
+    return Math.round((discount / order.originalTotal) * 100);
   };
 
   return (
@@ -107,7 +145,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
-              <Package2 className="h-5 w-5 text-steelblue-600" />
+              <Package className="h-5 w-5 text-steelblue-600" />
               <span className="text-3xl font-bold text-steelblue-900">{orders.length}</span>
             </div>
           </CardContent>
@@ -182,7 +220,7 @@ const AdminDashboard = () => {
         
         {filteredOrders.length === 0 ? (
           <div className="p-8 text-center">
-            <Package2 className="h-12 w-12 text-steelgray-400 mx-auto mb-4" />
+            <Package className="h-12 w-12 text-steelgray-400 mx-auto mb-4" />
             <p className="text-steelgray-500 font-medium">No orders found with the current filters.</p>
           </div>
         ) : (
@@ -220,7 +258,16 @@ const AdminDashboard = () => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <div>
+                        ₹{order.total.toFixed(2)}
+                        {order.originalTotal && order.originalTotal > order.total && (
+                          <div className="text-xs text-green-600">
+                            {calculateDiscountPercentage(order)}% discount
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         className={
@@ -348,7 +395,18 @@ const AdminDashboard = () => {
                   <TableBody>
                     {selectedOrder.items.map((item) => (
                       <TableRow key={item.productId}>
-                        <TableCell>{item.product.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                              <img 
+                                src={item.product.image} 
+                                alt={item.product.name}
+                                className="object-contain w-full h-full p-2"
+                              />
+                            </div>
+                            <span>{item.product.name}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>{item.product.subcategory}</TableCell>
                         <TableCell className="text-right">
                           ₹{item.product.price.toFixed(2)}
@@ -371,18 +429,79 @@ const AdminDashboard = () => {
                       {selectedOrder.items.reduce((sum, item) => sum + item.quantity, 0)}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-steelgray-500">Subtotal:</span>
-                    <span className="font-medium">₹{selectedOrder.total.toFixed(2)}</span>
+                  
+                  {selectedOrder.originalTotal && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-steelgray-500">Original Total:</span>
+                      <span className="font-medium line-through text-steelgray-500">
+                        ₹{selectedOrder.originalTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between py-2 border-b items-center">
+                    <span className="text-steelgray-500">
+                      {isEditingPrice ? 'New Total:' : 'Subtotal:'}
+                    </span>
+                    
+                    {isEditingPrice ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={editedPrice !== null ? editedPrice : selectedOrder.total}
+                          onChange={(e) => setEditedPrice(parseFloat(e.target.value))}
+                          className="w-28 text-right"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">₹{selectedOrder.total.toFixed(2)}</span>
+                        {selectedOrder.status === 'requested' && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={startPriceEdit} 
+                            className="h-6 w-6 rounded-full"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  
+                  {selectedOrder.originalTotal && selectedOrder.originalTotal > selectedOrder.total && (
+                    <div className="flex justify-between py-2 border-b text-green-600">
+                      <span>Discount:</span>
+                      <span>
+                        {calculateDiscountPercentage(selectedOrder)}%
+                        (₹{(selectedOrder.originalTotal - selectedOrder.total).toFixed(2)})
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between py-2 text-lg font-semibold">
                     <span>Total:</span>
-                    <span>₹{selectedOrder.total.toFixed(2)}</span>
+                    <span>₹{isEditingPrice && editedPrice !== null ? editedPrice.toFixed(2) : selectedOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
               
-              {selectedOrder.status === 'requested' && (
+              {isEditingPrice && (
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" onClick={cancelPriceEdit}>
+                    Cancel
+                  </Button>
+                  <Button onClick={savePriceEdit}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Price
+                  </Button>
+                </div>
+              )}
+              
+              {selectedOrder.status === 'requested' && !isEditingPrice && (
                 <div className="mt-6 flex justify-end space-x-2">
                   <Button
                     variant="outline"

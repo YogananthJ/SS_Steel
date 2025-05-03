@@ -5,13 +5,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { Product, ProductCategory } from '@/context/ProductContext';
 import {
-  Package2,
+  Package,
   Plus,
   Pencil,
   Trash2,
   SearchIcon,
   X,
   Save,
+  Upload,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +54,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Product name is required' }),
@@ -66,7 +69,15 @@ type FormValues = z.infer<typeof formSchema>;
 
 const AdminProducts = () => {
   const { user, isAdmin } = useAuth();
-  const { products, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { 
+    products, 
+    addProduct, 
+    updateProduct, 
+    deleteProduct, 
+    updateProductImage,
+    updateProductStock,
+    updateProductPrice
+  } = useProducts();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -75,6 +86,10 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isQuickEditMode, setIsQuickEditMode] = useState<Record<string, boolean>>({});
+  const [quickEditValues, setQuickEditValues] = useState<Record<string, { stock: number, price: number }>>({});
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageEditProduct, setImageEditProduct] = useState<Product | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -140,6 +155,11 @@ const AdminProducts = () => {
   const handleOpenDeleteDialog = (product: Product) => {
     setProductToDelete(product);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleOpenImageDialog = (product: Product) => {
+    setImageEditProduct(product);
+    setImageDialogOpen(true);
   };
   
   const handleCloseDialog = () => {
@@ -217,6 +237,58 @@ const AdminProducts = () => {
     }
   };
 
+  const handleImageUpdate = (imageUrl: string) => {
+    if (imageEditProduct) {
+      updateProductImage(imageEditProduct.id, imageUrl);
+      setImageDialogOpen(false);
+      setImageEditProduct(null);
+    }
+  };
+
+  const toggleQuickEdit = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    setIsQuickEditMode(prev => ({
+      ...prev,
+      [productId]: !prev[productId]
+    }));
+
+    if (!quickEditValues[productId]) {
+      setQuickEditValues(prev => ({
+        ...prev,
+        [productId]: {
+          stock: product.stock,
+          price: product.price
+        }
+      }));
+    }
+  };
+
+  const handleQuickEditChange = (productId: string, field: 'stock' | 'price', value: string) => {
+    const numValue = Number(value);
+    if (isNaN(numValue)) return;
+
+    setQuickEditValues(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [field]: numValue
+      }
+    }));
+  };
+
+  const saveQuickEdit = (productId: string) => {
+    const values = quickEditValues[productId];
+    if (!values) return;
+
+    updateProductStock(productId, values.stock);
+    updateProductPrice(productId, values.price);
+    
+    toggleQuickEdit(productId);
+    toast.success('Product updated successfully');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -260,7 +332,7 @@ const AdminProducts = () => {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {filteredProducts.length === 0 ? (
           <div className="p-8 text-center">
-            <Package2 className="h-12 w-12 text-steelgray-400 mx-auto mb-4" />
+            <Package className="h-12 w-12 text-steelgray-400 mx-auto mb-4" />
             <p className="text-steelgray-500 font-medium">No products found with the current filters.</p>
           </div>
         ) : (
@@ -268,6 +340,7 @@ const AdminProducts = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Subcategory</TableHead>
@@ -279,6 +352,17 @@ const AdminProducts = () => {
               <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="object-contain w-full h-full"
+                          onClick={() => handleOpenImageDialog(product)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>
                       {{
@@ -288,38 +372,102 @@ const AdminProducts = () => {
                       }[product.category]}
                     </TableCell>
                     <TableCell>{product.subcategory}</TableCell>
-                    <TableCell className="text-right">₹{product.price.toFixed(2)}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        className={
-                          product.stock > 10 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                            : product.stock > 0 
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' 
-                              : 'bg-red-100 text-red-800 hover:bg-red-100'
-                        }
-                      >
-                        {product.stock > 0 ? product.stock : 'Out of Stock'}
-                      </Badge>
+                    <TableCell className="text-right">
+                      {isQuickEditMode[product.id] ? (
+                        <Input
+                          type="number"
+                          value={quickEditValues[product.id]?.price || product.price}
+                          onChange={(e) => handleQuickEditChange(product.id, 'price', e.target.value)}
+                          className="w-24 text-right"
+                          step="0.01"
+                          min="0"
+                        />
+                      ) : (
+                        <>₹{product.price.toFixed(2)}</>
+                      )}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenEditDialog(product)}
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-red-500 text-red-500 hover:bg-red-50"
-                        onClick={() => handleOpenDeleteDialog(product)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
+                    <TableCell className="text-center">
+                      {isQuickEditMode[product.id] ? (
+                        <Input
+                          type="number"
+                          value={quickEditValues[product.id]?.stock || product.stock}
+                          onChange={(e) => handleQuickEditChange(product.id, 'stock', e.target.value)}
+                          className="w-24 text-center"
+                          min="0"
+                        />
+                      ) : (
+                        <Badge
+                          className={
+                            product.stock > 10 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                              : product.stock > 0 
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' 
+                                : 'bg-red-100 text-red-800 hover:bg-red-100'
+                          }
+                        >
+                          {product.stock > 0 ? product.stock : 'Out of Stock'}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right space-x-1 whitespace-nowrap">
+                      {isQuickEditMode[product.id] ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-green-500 text-green-500 hover:bg-green-50"
+                            onClick={() => saveQuickEdit(product.id)}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                            onClick={() => toggleQuickEdit(product.id)}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleQuickEdit(product.id)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Quick Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenImageDialog(product)}
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Image
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenEditDialog(product)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                            onClick={() => handleOpenDeleteDialog(product)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -479,6 +627,32 @@ const AdminProducts = () => {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Image Upload Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Product Image</DialogTitle>
+            <DialogDescription>
+              Upload a new image for {imageEditProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {imageEditProduct && (
+            <ImageUploader
+              currentImage={imageEditProduct.image}
+              onImageSelect={handleImageUpdate}
+            />
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImageDialogOpen(false)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       

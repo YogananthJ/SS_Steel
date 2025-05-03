@@ -28,6 +28,7 @@ export type Order = {
   total: number;
   status: 'requested' | 'approved' | 'rejected';
   date: string;
+  originalTotal?: number; // For storing the original price before discount
 };
 
 type ProductContextType = {
@@ -44,6 +45,10 @@ type ProductContextType = {
   placeOrder: (userId: string, userName: string) => void;
   updateOrderStatus: (orderId: string, status: 'requested' | 'approved' | 'rejected') => void;
   findProductById: (id: string) => Product | undefined;
+  updateOrderPrice: (orderId: string, newTotal: number) => void;
+  updateProductImage: (productId: string, imageUrl: string) => void;
+  updateProductStock: (productId: string, newStock: number) => void;
+  updateProductPrice: (productId: string, newPrice: number) => void;
 };
 
 export const ProductContext = createContext<ProductContextType>({
@@ -60,6 +65,10 @@ export const ProductContext = createContext<ProductContextType>({
   placeOrder: () => {},
   updateOrderStatus: () => {},
   findProductById: () => undefined,
+  updateOrderPrice: () => {},
+  updateProductImage: () => {},
+  updateProductStock: () => {},
+  updateProductPrice: () => {},
 });
 
 type ProductProviderProps = {
@@ -293,12 +302,73 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
     clearCart();
   };
 
+  // New function to update order price (for bulk discounts)
+  const updateOrderPrice = (orderId: string, newTotal: number) => {
+    setOrders(
+      orders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              originalTotal: order.originalTotal || order.total, // Store original price if not already stored
+              total: newTotal 
+            } 
+          : order
+      )
+    );
+  };
+
   const updateOrderStatus = (orderId: string, status: 'requested' | 'approved' | 'rejected') => {
+    const orderToUpdate = orders.find(order => order.id === orderId);
+    
+    if (orderToUpdate && status === 'approved') {
+      // Update stock when order is approved
+      orderToUpdate.items.forEach(item => {
+        const product = findProductById(item.productId);
+        if (product) {
+          const newStock = Math.max(0, product.stock - item.quantity);
+          updateProductStock(item.productId, newStock);
+        }
+      });
+    }
+    
     setOrders(
       orders.map(order => 
         order.id === orderId 
           ? { ...order, status } 
           : order
+      )
+    );
+  };
+
+  // New function to update product image
+  const updateProductImage = (productId: string, imageUrl: string) => {
+    setProducts(
+      products.map(product => 
+        product.id === productId 
+          ? { ...product, image: imageUrl } 
+          : product
+      )
+    );
+  };
+
+  // New function to update product stock independently
+  const updateProductStock = (productId: string, newStock: number) => {
+    setProducts(
+      products.map(product => 
+        product.id === productId 
+          ? { ...product, stock: newStock } 
+          : product
+      )
+    );
+  };
+
+  // New function to update product price independently
+  const updateProductPrice = (productId: string, newPrice: number) => {
+    setProducts(
+      products.map(product => 
+        product.id === productId 
+          ? { ...product, price: newPrice } 
+          : product
       )
     );
   };
@@ -319,6 +389,10 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
         placeOrder,
         updateOrderStatus,
         findProductById,
+        updateOrderPrice,
+        updateProductImage,
+        updateProductStock,
+        updateProductPrice,
       }}
     >
       {children}
