@@ -18,8 +18,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Chatbot />
       <Footer />
       
-      {/* Global styles */}
-      <style jsx global>{`
+      {/* Global styles added as a style element correctly */}
+      <style dangerouslySetInnerHTML={{ __html: `
         .product-card {
           background: white;
           border-radius: 0.5rem;
@@ -34,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         .hero-gradient {
           background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         }
-      `}</style>
+      `}} />
     </div>
   );
 };
