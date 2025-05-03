@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 
 export type ProductCategory = 'structural-materials' | 'steel-pipes' | 'sheets-plates';
@@ -302,7 +301,7 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
     clearCart();
   };
 
-  // New function to update order price (for bulk discounts)
+  // Updated function to update order price (for bulk discounts)
   const updateOrderPrice = (orderId: string, newTotal: number) => {
     setOrders(
       orders.map(order => 
@@ -317,30 +316,33 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
     );
   };
 
+  // Modified function to handle approved and rejected orders differently
   const updateOrderStatus = (orderId: string, status: 'requested' | 'approved' | 'rejected') => {
     const orderToUpdate = orders.find(order => order.id === orderId);
     
-    if (orderToUpdate && status === 'approved') {
-      // Update stock when order is approved
-      orderToUpdate.items.forEach(item => {
-        const product = findProductById(item.productId);
-        if (product) {
-          const newStock = Math.max(0, product.stock - item.quantity);
-          updateProductStock(item.productId, newStock);
-        }
-      });
+    if (orderToUpdate) {
+      // Only update stock when order is approved
+      if (status === 'approved') {
+        orderToUpdate.items.forEach(item => {
+          const product = findProductById(item.productId);
+          if (product) {
+            const newStock = Math.max(0, product.stock - item.quantity);
+            updateProductStock(item.productId, newStock);
+          }
+        });
+      }
+      
+      setOrders(
+        orders.map(order => 
+          order.id === orderId 
+            ? { ...order, status } 
+            : order
+        )
+      );
     }
-    
-    setOrders(
-      orders.map(order => 
-        order.id === orderId 
-          ? { ...order, status } 
-          : order
-      )
-    );
   };
 
-  // New function to update product image
+  // Enhanced function to update product image
   const updateProductImage = (productId: string, imageUrl: string) => {
     setProducts(
       products.map(product => 
@@ -351,23 +353,29 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
     );
   };
 
-  // New function to update product stock independently
+  // Enhanced function to update product stock independently
   const updateProductStock = (productId: string, newStock: number) => {
+    // Ensure stock is never negative
+    const validatedStock = Math.max(0, newStock);
+    
     setProducts(
       products.map(product => 
         product.id === productId 
-          ? { ...product, stock: newStock } 
+          ? { ...product, stock: validatedStock } 
           : product
       )
     );
   };
 
-  // New function to update product price independently
+  // Enhanced function to update product price independently
   const updateProductPrice = (productId: string, newPrice: number) => {
+    // Ensure price is never negative
+    const validatedPrice = Math.max(0, newPrice);
+    
     setProducts(
       products.map(product => 
         product.id === productId 
-          ? { ...product, price: newPrice } 
+          ? { ...product, price: validatedPrice } 
           : product
       )
     );
