@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,15 +53,38 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				steelblue: {
+					100: '#E6EBF2',
+					200: '#C4D1E3',
+					300: '#9BB1D1',
+					400: '#7B97C1',
+					500: '#507DBC',
+					600: '#3C649D',
+					700: '#2E4C77',
+					800: '#1F324F',
+					900: '#1A3A5F'
+				},
+				steelgray: {
+					100: '#F2F2F2',
+					200: '#E6E6E6',
+					300: '#D9D9D9',
+					400: '#BFBFBF',
+					500: '#A6A6A6',
+					600: '#8C8C8C',
+					700: '#737373',
+					800: '#58585A',
+					900: '#404040'
+				},
+				steelred: {
+					100: '#FADDE1',
+					200: '#F5BCC3',
+					300: '#EF9BA6',
+					400: '#EA7A88',
+					500: '#E63946',
+					600: '#B82E38',
+					700: '#8A232A',
+					800: '#5C171C',
+					900: '#2E0C0E'
 				}
 			},
 			borderRadius: {
@@ -89,6 +113,10 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			fontFamily: {
+				sans: ['Roboto', 'sans-serif'],
+				heading: ['Montserrat', 'sans-serif']
 			}
 		}
 	},
