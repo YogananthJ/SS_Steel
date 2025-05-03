@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { 
@@ -12,7 +12,8 @@ import {
   Truck,
   SearchIcon,
   Edit,
-  Save
+  Save,
+  FileEdit
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +137,22 @@ const AdminDashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-steelblue-900">Admin Dashboard</h1>
+      
+      {/* Admin Navigation */}
+      <div className="flex flex-wrap gap-4 mb-8">
+        <Button asChild variant="outline" className="flex items-center gap-2">
+          <Link to="/admin/dashboard">
+            <Package className="h-4 w-4" />
+            Orders
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="flex items-center gap-2">
+          <Link to="/admin/products">
+            <FileEdit className="h-4 w-4" />
+            Products Management
+          </Link>
+        </Button>
+      </div>
       
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
