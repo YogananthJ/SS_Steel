@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
@@ -90,6 +90,18 @@ const AdminProducts = () => {
   const [quickEditValues, setQuickEditValues] = useState<Record<string, { stock: number, price: number }>>({});
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageEditProduct, setImageEditProduct] = useState<Product | null>(null);
+  
+  // Initialize quickEditValues with products data when products are loaded
+  useEffect(() => {
+    const initialValues: Record<string, { stock: number, price: number }> = {};
+    products.forEach(product => {
+      initialValues[product.id] = { 
+        stock: product.stock,
+        price: product.price
+      };
+    });
+    setQuickEditValues(initialValues);
+  }, [products]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -254,7 +266,8 @@ const AdminProducts = () => {
       [productId]: !prev[productId]
     }));
 
-    if (!quickEditValues[productId]) {
+    // Reset quick edit values to current product values when entering edit mode
+    if (!isQuickEditMode[productId]) {
       setQuickEditValues(prev => ({
         ...prev,
         [productId]: {
@@ -281,9 +294,14 @@ const AdminProducts = () => {
   const saveQuickEdit = (productId: string) => {
     const values = quickEditValues[productId];
     if (!values) return;
-
-    updateProductStock(productId, values.stock);
-    updateProductPrice(productId, values.price);
+    
+    // Validate values to ensure they're not negative
+    const validStock = Math.max(0, values.stock);
+    const validPrice = Math.max(0, values.price);
+    
+    // Update the product stock and price
+    updateProductStock(productId, validStock);
+    updateProductPrice(productId, validPrice);
     
     toggleQuickEdit(productId);
     toast.success('Product updated successfully');
