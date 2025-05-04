@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, User, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -47,21 +47,6 @@ const NavBar = () => {
                 {link.name}
               </Link>
             ))}
-
-            {/* Dashboard Link (only visible when logged in) */}
-            {user && (
-              <Link 
-                to={isAdmin ? "/admin/dashboard" : "/customer/dashboard"}
-                className={`${
-                  isActive(isAdmin ? "/admin/dashboard" : "/customer/dashboard") ? 'nav-link-active' : 'nav-link-default'
-                } nav-link`}
-              >
-                <span className="flex items-center">
-                  <LayoutDashboard className="h-4 w-4 mr-1" />
-                  Dashboard
-                </span>
-              </Link>
-            )}
           </div>
           
           {/* Auth Buttons */}
@@ -80,6 +65,12 @@ const NavBar = () => {
                   </Button>
                   <div className="absolute right-0 w-48 mt-2 origin-top-right bg-white rounded-md shadow-lg hidden group-hover:block">
                     <div className="py-1">
+                      <Link
+                        to={isAdmin ? "/admin/dashboard" : "/customer/dashboard"}
+                        className="block px-4 py-2 text-sm text-steelgray-700 hover:bg-steelgray-100"
+                      >
+                        Dashboard
+                      </Link>
                       <button
                         onClick={logout}
                         className="block w-full text-left px-4 py-2 text-sm text-steelgray-700 hover:bg-steelgray-100"
@@ -144,10 +135,7 @@ const NavBar = () => {
                   className="block px-3 py-2 rounded-md text-base font-medium text-steelgray-100 hover:bg-steelblue-600 hover:text-white"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="flex items-center">
-                    <LayoutDashboard className="h-4 w-4 mr-1" />
-                    Dashboard
-                  </span>
+                  Dashboard
                 </Link>
                 {!isAdmin && (
                   <Link
