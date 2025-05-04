@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProducts } from '@/hooks/useProducts';
@@ -12,12 +12,20 @@ import { toast } from 'sonner';
 const Products = () => {
   const { category } = useParams<{ category?: ProductCategory }>();
   const navigate = useNavigate();
-  const { getProductsByCategory, getProductSubcategories, addToCart } = useProducts();
+  const { products, getProductsByCategory, getProductSubcategories, addToCart } = useProducts();
   const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<ProductCategory>(
     category as ProductCategory || 'structural-materials'
   );
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Set loading to false once products are available
+    if (products.length > 0) {
+      setIsLoading(false);
+    }
+  }, [products]);
 
   const categories: Record<ProductCategory, string> = {
     'structural-materials': 'Structural Materials',
@@ -30,7 +38,7 @@ const Products = () => {
     navigate(`/products/${value}`);
   };
 
-  const products = getProductsByCategory(activeCategory);
+  const categoryProducts = getProductsByCategory(activeCategory);
   const subcategories = getProductSubcategories(activeCategory);
 
   const handleQuantityChange = (productId: string, value: number) => {
@@ -63,6 +71,17 @@ const Products = () => {
       [product.id]: 1,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[500px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-steelblue-600 mx-auto mb-4"></div>
+          <p className="text-steelblue-800 font-medium">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -101,6 +120,17 @@ const Products = () => {
                     {categories[catKey as ProductCategory]}
                   </h2>
 
+                  {/* Show message if no products in this category */}
+                  {subcategories.length === 0 && (
+                    <div className="bg-white p-8 rounded-lg text-center">
+                      <AlertCircle className="h-12 w-12 mx-auto text-steelgray-400 mb-4" />
+                      <h3 className="text-xl font-medium text-steelgray-700 mb-2">No products found</h3>
+                      <p className="text-steelgray-500">
+                        We don't have any products in this category yet. Please check back later.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Group products by subcategory */}
                   {subcategories.map((subcategory) => (
                     <div key={subcategory} className="mb-10">
@@ -109,7 +139,7 @@ const Products = () => {
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products
+                        {categoryProducts
                           .filter((product) => product.subcategory === subcategory)
                           .map((product) => (
                             <div key={product.id} className="product-card">
