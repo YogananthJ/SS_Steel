@@ -65,7 +65,7 @@ const Home = () => {
       </section>
 
       {/* Chatbot Integration */}
-     <script src="//code.tidio.co/1s9wwfo2ovje8gl26pple0tmxd8uz5jp.js" async></script>
+     <script src="code.tidio.co/1s9wwfo2ovje8gl26pple0tmxd8uz5jp.js" async></script>
       {/* Stats Bar - Enhanced with better visual elements */}
       <section className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1530973428-5bf2db2e4d71')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
